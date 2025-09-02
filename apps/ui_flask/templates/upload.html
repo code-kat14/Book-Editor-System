@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
+    <label for="file">Upload Word Document (.docx)</label>
+    <input type="file" name="file" accept=".docx" required>
+    <button type="submit">Upload</button>
+</form>
+{% endblock %}

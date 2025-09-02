@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<p>Job ID: {{ job_id }}</p>
+<p>Status: {{ status }}</p>
+{% if status == 'Completed' %}
+<a href="{{ url_for('download', job_id=job_id) }}">Download Result</a>
+{% endif %}
+{% endblock %}
