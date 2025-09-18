@@ -1,4 +1,6 @@
+import re
 from time import time
+from typing import List
 from huggingface_hub import InferenceClient
 
 MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
@@ -44,9 +46,69 @@ class TrackChangesEditor:
                     time.sleep(2)
                 else:
                     print(f"Failed to process text after {max_retries} attempts")
-                    return text  # Return original
+                    return text
 
     # Split original into chunks
+    def split_into_chunks(self, text: str, max_chunk_size: int = 1000) -> List[str]:
+        paragraphs = text.split('\n\n')
+        chunks = []
+        current_chunk = []
+        current_size = 0
+        
+        for paragraph in paragraphs:
+            if not paragraph.strip():
+                continue
+                
+            para_size = len(paragraph)
+            
+            # If paragraph is too big, split it into sentences
+            if para_size > max_chunk_size:
+                if current_chunk:
+                    chunk_text = '\n\n'.join(current_chunk)
+                    chunks.append(chunk_text)
+                    current_chunk = []
+                    current_size = 0
+                
+                sentences = re.findall(r'[^.!?]+[.!?]*', paragraph)
+                sentence_chunks = []
+                temp_chunk = []
+                temp_size = 0
+                
+                for sentence in sentences:
+                    sentence = sentence.strip()
+                    if not sentence:
+                        continue
+                        
+                    sent_size = len(sentence)
+                    if temp_size + sent_size > max_chunk_size and temp_chunk:
+                        sentence_chunks.append(' '.join(temp_chunk))
+                        temp_chunk = [sentence]
+                        temp_size = sent_size
+                    else:
+                        temp_chunk.append(sentence)
+                        temp_size += sent_size + 1
+                
+                if temp_chunk:
+                    sentence_chunks.append(' '.join(temp_chunk))
+                
+                chunks.extend(sentence_chunks)
+                continue
+            
+            if current_size + para_size + 2 > max_chunk_size and current_chunk:  # +2 for \n\n
+                chunk_text = '\n\n'.join(current_chunk)
+                chunks.append(chunk_text)
+                current_chunk = [paragraph]
+                current_size = para_size
+            else:
+                current_chunk.append(paragraph)
+                current_size += para_size + 2  # +2 for \n\n
+    
+        # Add the last chunk
+        if current_chunk:
+            chunk_text = '\n\n'.join(current_chunk)
+            chunks.append(chunk_text)
+        
+        return chunks
 
     # Process each chunk and combine results
 
